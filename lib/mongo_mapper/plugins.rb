@@ -11,6 +11,7 @@ module MongoMapper
       plugins << mod
     end
 
+    autoload :Atomic,         'mongo_mapper/plugins/atomic'
     autoload :Callbacks,      'mongo_mapper/plugins/callbacks'
     autoload :Clone,          'mongo_mapper/plugins/clone'
     autoload :Descendants,    'mongo_mapper/plugins/descendants'

@@ -15,6 +15,7 @@ module MongoMapper
         plugin Plugins::Equality
         plugin Plugins::Inspect
         plugin Plugins::Keys
+        plugin Plugins::Atomic # needs to be after keys to replace to_mongo
         plugin Plugins::Dirty # for now dirty needs to be after keys
         plugin Plugins::Logger
         plugin Plugins::Pagination
@@ -359,13 +360,13 @@ module MongoMapper
       end
 
       def save(options={})
-        options.assert_valid_keys(:validate, :safe)
+        options.assert_valid_keys(:validate, :safe, :atomic)
         options.reverse_merge!(:validate => true)
         !options[:validate] || valid? ? create_or_update(options) : false
       end
 
       def save!(options={})
-        options.assert_valid_keys(:safe)
+        options.assert_valid_keys(:safe, :atomic)
         save(options) || raise(DocumentNotValid.new(self))
       end
 
@@ -414,8 +415,13 @@ module MongoMapper
 
       def save_to_collection(options={})
         safe = options[:safe] || false
+        atomic = (!@new && options[:atomic]) || false
         @new = false
-        collection.save(to_mongo, :safe => safe)
+        if atomic
+          collection.update({"_id" => id}, to_mongo(true), :safe => safe)
+        else
+          collection.save(to_mongo, :safe => safe)
+        end
       end
 
       def update_timestamps

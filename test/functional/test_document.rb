@@ -797,6 +797,7 @@ class DocumentTest < Test::Unit::TestCase
     setup do
       @document = Doc do
         key :name, String
+        key :age, Integer
         set_collection_name 'test_indexes'
       end
       drop_indexes(@document)
@@ -808,6 +809,19 @@ class DocumentTest < Test::Unit::TestCase
       assert_raises(Mongo::OperationFailure) do
         @document.new(:name => 'John').save(:safe => true)
       end
+    end
+
+    should "allow passing atomic" do
+      d = @document.create(:name => 'John', :age => 15)
+      d2 = @document.find(d.id)
+      d.update_attributes!(:name => 'Nhoj')
+      d2.age = 30
+      d2.save!(:atomic => true)
+      d.reload
+      d2.reload
+
+      d2.name.should == d.name
+      d.age.should == 30
     end
 
     should "raise argument error if options has unsupported key" do
