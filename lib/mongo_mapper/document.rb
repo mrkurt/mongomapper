@@ -15,7 +15,6 @@ module MongoMapper
         plugin Plugins::Equality
         plugin Plugins::Inspect
         plugin Plugins::Keys
-        plugin Plugins::Atomic # needs to be after keys to replace to_mongo
         plugin Plugins::Dirty # for now dirty needs to be after keys
         plugin Plugins::Logger
         plugin Plugins::Pagination
@@ -418,7 +417,9 @@ module MongoMapper
         atomic = (!@new && options[:atomic]) || false
         @new = false
         if atomic
-          collection.update({"_id" => id}, to_mongo(true), :safe => safe)
+          attrs = to_mongo
+          attrs.delete_if{ |k,v| !changes.has_key?(k) }
+          collection.update({"_id" => id}, {'$set' => attrs}, :safe => safe)
         else
           collection.save(to_mongo, :safe => safe)
         end
